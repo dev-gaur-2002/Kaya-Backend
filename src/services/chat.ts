@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js'
 import { groq } from '../lib/groq.js'
-import { getConfig } from './config.js'
+import { getConfig, type LlmSettings } from './config.js'
 import { buildSystemPrompt } from './prompt.js'
 import { triage, type VitalReading } from './safety.js'
 import type { SafetyRule } from './config.schemas.js'
@@ -53,7 +53,7 @@ export async function sendMessage(
 
   const [system, llm, app] = await Promise.all([
     buildSystemPrompt(userId, message, justLogged, rules),
-    getConfig<{ model: string; temperature: number; max_tokens: number }>('llm.settings'),
+    getConfig<LlmSettings>('llm.settings'),
     getConfig<{ history_turns: number }>('app.settings'),
   ])
 
@@ -73,6 +73,7 @@ export async function sendMessage(
     model: llm.model,
     temperature: llm.temperature,
     max_tokens: llm.max_tokens,
+    reasoning_effort: llm.reasoning_effort,
     messages: [{ role: 'system', content: system }, ...turns],
   })
 

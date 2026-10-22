@@ -53,3 +53,10 @@ export async function getPacks(conditionCodes: string[]): Promise<ConditionPack[
 }
 
 export * from './config.schemas.js'
+
+export type LlmSettings = {
+  model: string
+  temperature: number
+  max_tokens: number
+  reasoning_effort: 'low' | 'medium' | 'high'
+}

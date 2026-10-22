@@ -68,6 +68,8 @@ export const EXACT: Record<string, z.ZodType> = {
     model: z.string().min(1),
     temperature: z.number().min(0).max(2),
     max_tokens: z.number().int().positive(),
+    // gpt-oss is a reasoning model; Groq accepts low | medium | high.
+    reasoning_effort: z.enum(['low', 'medium', 'high']).default('medium'),
   }),
   'app.settings': z.object({
     vital_stale_days: z.number().int().positive(),

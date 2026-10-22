@@ -1,7 +1,7 @@
 import { extractText, getDocumentProxy } from 'unpdf'
 import { db } from '../lib/supabase.js'
 import { groq } from '../lib/groq.js'
-import { getConfig } from './config.js'
+import { getConfig, type LlmSettings } from './config.js'
 import { normalize } from './units.js'
 
 // Below this, the PDF almost certainly has no text layer (a scan or photo).
@@ -47,13 +47,14 @@ export async function ingest(userId: string, file: { buffer: Buffer; originalnam
 
   const [system, llm] = await Promise.all([
     getConfig<string>('prompt.document_extraction'),
-    getConfig<{ model: string; max_tokens: number }>('llm.settings'),
+    getConfig<LlmSettings>('llm.settings'),
   ])
 
   const res = await groq.chat.completions.create({
     model: llm.model,
     temperature: 0,
     max_tokens: llm.max_tokens,
+    reasoning_effort: 'low', // copying numbers off a page, not reasoning about them
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: system },

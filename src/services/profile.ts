@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js'
 import { groq } from '../lib/groq.js'
-import { getConfig } from './config.js'
+import { getConfig, type LlmSettings } from './config.js'
 
 export type Profile = {
   id: string
@@ -140,12 +140,13 @@ export async function loadContext(userId: string) {
 export async function synthesize(userId: string, answers: Record<string, unknown>) {
   const [system, llm] = await Promise.all([
     getConfig<string>('prompt.onboarding_synthesis'),
-    getConfig<{ model: string; temperature: number; max_tokens: number }>('llm.settings'),
+    getConfig<LlmSettings>('llm.settings'),
   ])
 
   const res = await groq.chat.completions.create({
     model: llm.model,
     temperature: 0.1, // extraction, not conversation
+    reasoning_effort: 'low', // parsing answers into fields does not need deliberation
     max_tokens: llm.max_tokens,
     response_format: { type: 'json_object' },
     messages: [

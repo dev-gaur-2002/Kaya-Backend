@@ -1,6 +1,6 @@
 import { db } from '../lib/supabase.js'
 import { groq } from '../lib/groq.js'
-import { getConfig } from './config.js'
+import { getConfig, type LlmSettings } from './config.js'
 import { loadContext, renderUP } from './profile.js'
 
 /**
@@ -38,14 +38,15 @@ export async function queueNext(userId: string) {
 
   const [system, llm, ctx] = await Promise.all([
     getConfig<string>('prompt.followup_generator'),
-    getConfig<{ model: string; temperature: number }>('llm.settings'),
+    getConfig<LlmSettings>('llm.settings'),
     loadContext(userId),
   ])
 
   const res = await groq.chat.completions.create({
     model: llm.model,
     temperature: llm.temperature,
-    max_tokens: 200,
+    max_tokens: 600, // reasoning tokens share this budget with the opener
+    reasoning_effort: 'low',
     messages: [
       { role: 'system', content: system },
       {

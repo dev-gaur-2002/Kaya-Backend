@@ -11,8 +11,10 @@ import { schemaFor } from './config.schemas.js'
 
 const sql = readFileSync(new URL('../../supabase/seed.sql', import.meta.url), 'utf8')
 
-// ('key', '<json>'::jsonb  |  ('key', '<text literal>'  — the two shapes in the seed.
-const entries = [...sql.matchAll(/\('([a-z0-9_.]+)',\s*('(?:[^']|'')*')(::jsonb)?/g)].map(
+// ('key', '<json>'::jsonb  |  ('key', to_jsonb('<text literal>'::text)  — the two
+// shapes in the seed. A prompt is a bare string, so it needs the to_jsonb wrapper:
+// Postgres casting a bare text literal into a jsonb column is a syntax error.
+const entries = [...sql.matchAll(/\('([a-z0-9_.]+)',\s*(?:to_jsonb\()?('(?:[^']|'')*')(::jsonb)?/g)].map(
   ([, key, literal, isJsonb]) => ({
     key,
     raw: literal.slice(1, -1).replaceAll("''", "'"),

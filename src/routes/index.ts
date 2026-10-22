@@ -9,6 +9,7 @@ import { sendMessage } from '../services/chat.js'
 import { ingest, looksLikePdf } from '../services/documents.js'
 import { dueFollowUp, markDelivered, queueNext } from '../services/followups.js'
 import { normalize } from '../services/units.js'
+import { loginAsUsername } from '../services/demoAuth.js'
 import type { Question, GoalTemplate } from '../services/config.schemas.js'
 
 const upload = multer({
@@ -25,6 +26,16 @@ router.get('/config/onboarding', async (_req, res) => {
 
 router.get('/config/goals', async (_req, res) => {
   res.json({ goals: await getConfig<GoalTemplate[]>('goals.catalogue') })
+})
+
+// ---------------------------------------------------------------- demo login (public)
+// Username only, no password. See services/demoAuth.ts for why this is safe to
+// expose here and nowhere near real data.
+router.post('/demo/login', async (req, res) => {
+  const body = z.object({ username: z.string().min(1).max(40) }).parse(req.body)
+  const result = await loginAsUsername(body.username)
+  if (!result) return res.status(400).json({ error: 'username needs at least one letter or number' })
+  res.json(result)
 })
 
 // ---------------------------------------------------------------- authed below
