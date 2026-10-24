@@ -14,6 +14,7 @@ import { db } from '../lib/supabase.js'
 import { DEMO_PASSWORD, usernameToEmail } from '../services/demoAuth.js'
 
 type Demo = {
+  name: string
   email: string
   password: string
   profile: Record<string, unknown>
@@ -23,6 +24,7 @@ const PASSWORD = DEMO_PASSWORD
 
 export const DEMO_USERS: Demo[] = [
   {
+    name: 'Asha',
     email: usernameToEmail('Asha')!,
     password: PASSWORD,
     profile: {
@@ -45,6 +47,7 @@ export const DEMO_USERS: Demo[] = [
     },
   },
   {
+    name: 'Ravi',
     email: usernameToEmail('Ravi')!,
     password: PASSWORD,
     profile: {
@@ -66,6 +69,7 @@ export const DEMO_USERS: Demo[] = [
     },
   },
   {
+    name: 'Meera',
     email: usernameToEmail('Meera')!,
     password: PASSWORD,
     profile: {
@@ -86,6 +90,7 @@ export const DEMO_USERS: Demo[] = [
     },
   },
   {
+    name: 'Sam',
     email: usernameToEmail('Sam')!,
     password: PASSWORD,
     profile: {
@@ -132,7 +137,7 @@ for (const user of DEMO_USERS) {
   // and an update would silently touch nothing.
   const { error } = await db
     .from('profiles')
-    .upsert({ id, ...user.profile, onboarded_at: new Date().toISOString() })
+    .upsert({ id, name: user.name, ...user.profile, onboarded_at: new Date().toISOString() })
   if (error) throw new Error(`${user.email} profile: ${error.message}`)
   console.log(`✓ ${user.email} (${id})`)
 }

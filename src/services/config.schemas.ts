@@ -8,7 +8,7 @@ import { z } from 'zod'
 
 export const questionSchema = z.object({
   id: z.string().min(1),
-  type: z.enum(['single', 'multi', 'number', 'text', 'date', 'boolean']),
+  type: z.enum(['single', 'multi', 'number', 'text', 'date', 'boolean', 'height']),
   prompt: z.string().min(1),
   help_text: z.string().optional(),
   options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
@@ -17,6 +17,8 @@ export const questionSchema = z.object({
     .optional(),
   // Conditional display, evaluated client-side against answers already given.
   show_if: z.object({ question: z.string(), in: z.array(z.string()) }).optional(),
+  // Offers a file upload alongside the answer (a prescription, on medications).
+  allow_upload: z.boolean().optional(),
   // Dot-path into profiles, e.g. "conditions" or "constraints.pregnant".
   writes_to: z.string().min(1),
 })
@@ -70,10 +72,14 @@ export const EXACT: Record<string, z.ZodType> = {
     max_tokens: z.number().int().positive(),
     // gpt-oss is a reasoning model; Groq accepts low | medium | high.
     reasoning_effort: z.enum(['low', 'medium', 'high']).default('medium'),
+    // `model` is text-only, so photographed reports go to a vision model instead.
+    vision_model: z.string().min(1).default('meta-llama/llama-4-scout-17b-16e-instruct'),
   }),
   'app.settings': z.object({
     vital_stale_days: z.number().int().positive(),
     followup_cadence_hours: z.number().int().positive(),
+    // Meal follow-ups are about a plate they just ate, so they land the same day.
+    meal_followup_hours: z.number().int().positive().default(3),
     history_turns: z.number().int().positive(),
   }),
 }

@@ -25,16 +25,32 @@ export async function markDelivered(userId: string, id: string) {
   await db.from('follow_ups').update({ status: 'delivered' }).eq('id', id).eq('user_id', userId)
 }
 
-/** Queues the next follow-up if none is pending. Idempotent per cadence window. */
-export async function queueNext(userId: string) {
-  const app = await getConfig<{ followup_cadence_hours: number }>('app.settings')
+export type QueueOpts = {
+  /** 'cadence' is the periodic nudge; anything else is about a specific event. */
+  reason?: string
+  /** Appended to the generator's input so the opener is about that event. */
+  context?: string
+  conversationId?: string
+}
 
-  const { count } = await db
-    .from('follow_ups')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('status', 'queued')
-  if ((count ?? 0) > 0) return null
+/** Queues a follow-up. The cadence one is idempotent per window; event ones are not. */
+export async function queueNext(userId: string, opts: QueueOpts = {}) {
+  const reason = opts.reason ?? 'cadence'
+  const app = await getConfig<{
+    followup_cadence_hours: number
+    meal_followup_hours: number
+  }>('app.settings')
+
+  // Only the periodic nudge is one-at-a-time. An event follow-up is about a
+  // thing that just happened and is worthless if a queued cadence one blocks it.
+  if (reason === 'cadence') {
+    const { count } = await db
+      .from('follow_ups')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'queued')
+    if ((count ?? 0) > 0) return null
+  }
 
   const [system, llm, ctx] = await Promise.all([
     getConfig<string>('prompt.followup_generator'),
@@ -51,7 +67,10 @@ export async function queueNext(userId: string) {
       { role: 'system', content: system },
       {
         role: 'user',
-        content: renderUP(ctx.profile, ctx.vitals, ctx.adherence, ctx.staleDays),
+        content: [
+          renderUP(ctx.profile, ctx.vitals, ctx.adherence, ctx.staleDays),
+          opts.context ? `\n# What just happened\n${opts.context}` : '',
+        ].join(''),
       },
     ],
   })
@@ -59,10 +78,17 @@ export async function queueNext(userId: string) {
   const opener = res.choices[0]?.message?.content?.trim()
   if (!opener) return null
 
-  const dueAt = new Date(Date.now() + app.followup_cadence_hours * 3_600_000).toISOString()
+  const hours = reason === 'meal' ? app.meal_followup_hours : app.followup_cadence_hours
+  const dueAt = new Date(Date.now() + hours * 3_600_000).toISOString()
   const { data } = await db
     .from('follow_ups')
-    .insert({ user_id: userId, reason: 'cadence', opener, due_at: dueAt })
+    .insert({
+      user_id: userId,
+      reason,
+      opener,
+      due_at: dueAt,
+      conversation_id: opts.conversationId ?? null,
+    })
     .select('id,opener,due_at')
     .single()
   return data

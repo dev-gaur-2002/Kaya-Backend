@@ -49,5 +49,17 @@ export async function loginAsUsername(username: string) {
 
   const { data, error } = await db.auth.signInWithPassword({ email, password: DEMO_PASSWORD })
   if (error || !data.session) throw new Error(`demo login: ${error?.message ?? 'no session'}`)
+
+  // The typed name is the only name this app ever sees — the email it collapses
+  // to has lost the spacing and capitalisation. Keep it, so the profile screen
+  // can address the person. Only when unset: a rename elsewhere must not be
+  // overwritten on every sign-in. The handle_new_user trigger has already
+  // created the row by now.
+  await db
+    .from('profiles')
+    .update({ name: username.trim() })
+    .eq('id', data.session.user.id)
+    .is('name', null)
+
   return { session: data.session, username: email.split('@')[0] }
 }

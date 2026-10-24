@@ -59,4 +59,5 @@ export type LlmSettings = {
   temperature: number
   max_tokens: number
   reasoning_effort: 'low' | 'medium' | 'high'
+  vision_model: string
 }

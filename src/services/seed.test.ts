@@ -57,3 +57,15 @@ it('gives every emergency rule non-empty copy, since that copy replaces the mode
     expect(r.response_copy.length, `${r.key} has empty copy`).toBeGreaterThan(40)
   }
 })
+
+it('gives every goal a target the counter can count up to', () => {
+  const goals = JSON.parse(entries.find((e) => e.key === 'goals.catalogue')!.raw)
+  // The profile screen draws "5 / 8 glasses" straight off default_target, and
+  // the log route derives completed from it. A zero target would mark every
+  // goal done the moment it is picked.
+  for (const g of goals) {
+    expect(g.default_target, `${g.code} has no usable target`).toBeGreaterThan(0)
+    expect(g.unit.length, `${g.code} has no unit to label the counter`).toBeGreaterThan(0)
+  }
+  expect(goals.find((g: { code: string }) => g.code === 'water').default_target).toBe(8)
+})
