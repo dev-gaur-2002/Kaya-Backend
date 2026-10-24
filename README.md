@@ -2,6 +2,10 @@
 
 Express + Supabase + Groq. Deploys to Vercel from the repo root.
 
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` and `GROQ_API_KEY` must be set as
+Vercel environment variables too — `config/env.ts` refuses to boot without them,
+and every route then answers 500 `boot failed — ...` naming the missing one.
+
 ## Setup
 
 ```bash
